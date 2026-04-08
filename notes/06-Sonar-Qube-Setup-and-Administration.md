@@ -3,6 +3,7 @@
 **SonarQube** is an automatic code review tool to detect bugs, vulnerabilities, and code smells in your source code. It can be integrated with your existing workflow to enable continuous code inspection across your project branches and pull requests.
 
 ---
+Tool review code, bugs, rules define according to different langauge. 
 
 ## 1. System Requirements
 - **Java**: SonarQube is built with Java. Version 17 is typically required for recent versions.

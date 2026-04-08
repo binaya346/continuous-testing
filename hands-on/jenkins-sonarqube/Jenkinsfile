@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    environment {
+        // Must match the SonarQube Scanner tool name in:
+        // Manage Jenkins > Tools > SonarQube Scanner installations
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "Branch: ${env.BRANCH_NAME ?: 'N/A'}"
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // ── Maven ────────────────────────────────────────────────
+                // sh 'mvn clean package -DskipTests'
+                //
+                // ── Node.js ──────────────────────────────────────────────
+                // sh 'npm ci && npm run build'
+                //
+                // ── Python ───────────────────────────────────────────────
+                // sh 'pip install -r requirements.txt'
+                //
+                echo "Replace this echo with your build command."
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // withSonarQubeEnv automatically injects SONAR_HOST_URL and
+                // SONAR_AUTH_TOKEN from the server configured in Jenkins > System.
+                // 'SonarQube' must match the server Name in that configuration.
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                          -Dsonar.projectKey=my-app \
+                          -Dsonar.projectName='My App' \
+                          -Dsonar.sources=. \
+                          -Dsonar.exclusions=**/node_modules/**,**/*.test.js,**/vendor/**,**/target/**
+                    """
+                    // ── Maven alternative (reads sonar config from pom.xml) ──
+                    // sh 'mvn sonar:sonar -Dsonar.projectKey=my-app'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                // Waits for SonarQube to send the webhook result back to Jenkins.
+                // abortPipeline: true  → marks the build FAILED if gate fails.
+                // Requires a webhook configured in SonarQube pointing to Jenkins.
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Quality Gate PASSED — code meets all conditions."
+        }
+        failure {
+            echo "Build FAILED — check Quality Gate results at http://localhost:9000"
+        }
+        always {
+            echo "SonarQube dashboard: http://localhost:9000/dashboard?id=my-app"
+        }
+    }
+}
